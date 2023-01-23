@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import pickle
 import serial
+from pyfirmata import Arduino, SERVO
+from time import sleep
 
 frameWidth = 640
 frameHeight = 480
@@ -17,7 +19,28 @@ cap.set(10, brightness)
 pickle_in = open("model_trained.p", "rb")  ## rb = READ BYTE
 model = pickle.load(pickle_in)
 
-ser = serial.Serial('COM3', 9600)
+port = 'COM3'
+pin = 10
+board = Arduino(port)
+board.digital[pin].mode = SERVO
+
+#ser = serial.Serial('COM3', 9600)
+
+def rotateServo(pin):
+    board.digital[pin].write(0)
+    sleep(0.5)
+
+    board.digital[pin].write(90)
+    sleep(0.5)
+
+    board.digital[pin].write(180)
+    sleep(0.5)
+
+    board.digital[pin].write(90)
+    sleep(0.5)
+
+    board.digital[pin].write(0)
+    sleep(0.5)
 
 def led_on_off(ser, isOn):
     if isOn == True:
@@ -46,7 +69,6 @@ def getCalssName(classNo):
         return 'Searching...'
 
 
-
 while True:
     success, imgOrignal = cap.read()
 
@@ -73,10 +95,16 @@ while True:
         if (str(getCalssName(classIndex)) == 'Algopirin'):
             print('-----------------------------------------------------------##########################--------------------------------------')
             print(str(getCalssName(classIndex)) + ' ' + str(probabilityValue)  + ' ' + str(classIndex) )
+            board.digital[pin].write(180)
+            sleep(0.5)
+            board.digital[pin].write(90)
+            sleep(0.5)
 
     key = cv2.waitKey(1)
     if key == ord("q"):
-        led_on_off(ser, False)
+        #led_on_off(ser, False)
+        board.digital[pin].write(90)
+        sleep(0.5)
         break
 
-    led_on_off(ser, True)
+    #led_on_off(ser, True)
