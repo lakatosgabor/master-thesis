@@ -20,7 +20,7 @@ pickle_in = open("model_trained.p", "rb")  ## rb = READ BYTE
 model = pickle.load(pickle_in)
 
 port = 'COM3'
-pin = 10
+pin = 3
 board = Arduino(port)
 board.digital[pin].mode = SERVO
 
@@ -99,6 +99,12 @@ while True:
             sleep(0.5)
             board.digital[pin].write(90)
             sleep(0.5)
+        else:
+            board.digital[pin].write(90)
+            sleep(0.5)
+            board.digital[pin].write(0)
+            sleep(0.5)
+
 
     key = cv2.waitKey(1)
     if key == ord("q"):
