@@ -8,7 +8,7 @@ from time import sleep
 frameWidth = 640
 frameHeight = 480
 brightness = 180
-threshold = 0.80
+threshold = 0.2
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 cap = cv2.VideoCapture(0)
@@ -61,12 +61,9 @@ def preprocessing(img):
     return img
 
 def getCalssName(classNo):
-    if classNo == 0:
+    if classNo == 35 or classNo == 13 or classNo == 34:
         return 'Algopirin'
-    elif classNo == 2:
-        return '50-es tábla'
-    else:
-        return 'Searching...'
+    return 'Searching...'
 
 
 while True:
@@ -88,22 +85,17 @@ while True:
     predClass = model.predict_step(img)
     classIndex = np.argmax(predClass)
     probabilityValue = np.amax(predictions)
-    print(str(getCalssName(classIndex)) + ' ' + str(probabilityValue) + ' ' + str(classIndex))
 
 
     if probabilityValue > threshold:
         if (str(getCalssName(classIndex)) == 'Algopirin'):
-            print('-----------------------------------------------------------##########################--------------------------------------')
-            print(str(getCalssName(classIndex)) + ' ' + str(probabilityValue)  + ' ' + str(classIndex) )
+            print('---------------------------------------------------##########################--------------------------------------')
+            print(str(getCalssName(classIndex)) + ' találat' + ' ' + str(classIndex))
             board.digital[pin].write(180)
             sleep(0.5)
             board.digital[pin].write(90)
             sleep(0.5)
-        else:
-            board.digital[pin].write(90)
-            sleep(0.5)
-            board.digital[pin].write(0)
-            sleep(0.5)
+            break
 
 
     key = cv2.waitKey(1)
