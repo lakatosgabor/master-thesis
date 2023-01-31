@@ -14,16 +14,58 @@ import pandas as pd
 import random
 from keras.preprocessing.image import ImageDataGenerator
 
-################# Parameters #####################
+
+############################### PREPROCESSING THE IMAGES
+
+def grayscale(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return img
+
+def equalize(img):
+    img = cv2.equalizeHist(img)
+    return img
+
+def preprocessing(img):
+    img = grayscale(img)  # CONVERT TO GRAYSCALE
+    img = equalize(img)  # STANDARDIZE THE LIGHTING IN AN IMAGE
+    img = img / 255  # TO NORMALIZE VALUES BETWEEN 0 AND 1 INSTEAD OF 0 TO 255
+    return img
+
+############################### CONVOLUTION NEURAL NETWORK MODEL
+def myModel():
+    no_Of_Filters = 60
+    size_of_Filter = (5, 5)  # THIS IS THE KERNEL THAT MOVE AROUND THE IMAGE TO GET THE FEATURES.
+    # THIS WOULD REMOVE 2 PIXELS FROM EACH BORDER WHEN USING 32 32 IMAGE
+    size_of_Filter2 = (3, 3)
+    size_of_pool = (2, 2)  # SCALE DOWN ALL FEATURE MAP TO GERNALIZE MORE, TO REDUCE OVERFITTING
+    no_Of_Nodes = 500  # NO. OF NODES IN HIDDEN LAYERS
+    model = Sequential()
+    model.add((Conv2D(no_Of_Filters, size_of_Filter, input_shape=(imageDimesions[0], imageDimesions[1], 1),
+                      activation='relu')))  # ADDING MORE CONVOLUTION LAYERS = LESS FEATURES BUT CAN CAUSE ACCURACY TO INCREASE
+    model.add((Conv2D(no_Of_Filters, size_of_Filter, activation='relu')))
+    model.add(MaxPooling2D(pool_size=size_of_pool))  # DOES NOT EFFECT THE DEPTH/NO OF FILTERS
+
+    model.add((Conv2D(no_Of_Filters // 2, size_of_Filter2, activation='relu')))
+    model.add((Conv2D(no_Of_Filters // 2, size_of_Filter2, activation='relu')))
+    model.add(MaxPooling2D(pool_size=size_of_pool))
+    model.add(Dropout(0.5))
+
+    model.add(Flatten())
+    model.add(Dense(no_Of_Nodes, activation='relu'))
+    model.add(Dropout(0.5))  # INPUTS NODES TO DROP WITH EACH UPDATE 1 ALL 0 NONE
+    model.add(Dense(noOfClasses, activation='softmax'))  # OUTPUT LAYER
+    # COMPILE MODEL
+    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
 
 path = "myData"  # folder with all the class folders
 labelFile = 'labels.csv'  # file with all names of classes
-batch_size_val = 50  # how many to process together
-epochs_val = 30
-imageDimesions = (32, 32, 3)
+batch_size_val = 10  # how many to process together
+epochs_val = 5
+imageDimesions = (200, 200, 3)
 testRatio = 0.2  # if 1000 images split will 200 for testing
 validationRatio = 0.2  # if 1000 images 20% of remaining 800 will be 160 for validation
-###################################################
 
 
 ############################### Importing of the Images
@@ -74,49 +116,6 @@ assert (X_test.shape[1:] == (imageDimesions)), " The dimesionas of the Test imag
 data = pd.read_csv(labelFile)
 print("data shape ", data.shape, type(data))
 
-############################### DISPLAY SOME SAMPLES IMAGES  OF ALL THE CLASSES
-num_of_samples = []
-cols = 5
-num_classes = noOfClasses
-fig, axs = plt.subplots(nrows=num_classes, ncols=cols, figsize=(5, 300))
-fig.tight_layout()
-for i in range(cols):
-    for j, row in data.iterrows():
-        x_selected = X_train[y_train == j]
-        axs[j][i].imshow(x_selected[random.randint(0, len(x_selected) - 1), :, :], cmap=plt.get_cmap("gray"))
-        axs[j][i].axis("off")
-        if i == 2:
-            axs[j][i].set_title(str(j) + "-" + row["Name"])
-            num_of_samples.append(len(x_selected))
-
-############################### DISPLAY A BAR CHART SHOWING NO OF SAMPLES FOR EACH CATEGORY
-print(num_of_samples)
-plt.figure(figsize=(12, 4))
-plt.bar(range(0, num_classes), num_of_samples)
-plt.title("Distribution of the training dataset")
-plt.xlabel("Class number")
-plt.ylabel("Number of images")
-plt.show()
-
-
-############################### PREPROCESSING THE IMAGES
-
-def grayscale(img):
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return img
-
-
-def equalize(img):
-    img = cv2.equalizeHist(img)
-    return img
-
-
-def preprocessing(img):
-    img = grayscale(img)  # CONVERT TO GRAYSCALE
-    img = equalize(img)  # STANDARDIZE THE LIGHTING IN AN IMAGE
-    img = img / 255  # TO NORMALIZE VALUES BETWEEN 0 AND 1 INSTEAD OF 0 TO 255
-    return img
-
 
 X_train = np.array(list(map(preprocessing, X_train)))  # TO IRETATE AND PREPROCESS ALL IMAGES
 X_validation = np.array(list(map(preprocessing, X_validation)))
@@ -153,34 +152,6 @@ plt.show()
 y_train = to_categorical(y_train, noOfClasses)
 y_validation = to_categorical(y_validation, noOfClasses)
 y_test = to_categorical(y_test, noOfClasses)
-
-
-############################### CONVOLUTION NEURAL NETWORK MODEL
-def myModel():
-    no_Of_Filters = 60
-    size_of_Filter = (5, 5)  # THIS IS THE KERNEL THAT MOVE AROUND THE IMAGE TO GET THE FEATURES.
-    # THIS WOULD REMOVE 2 PIXELS FROM EACH BORDER WHEN USING 32 32 IMAGE
-    size_of_Filter2 = (3, 3)
-    size_of_pool = (2, 2)  # SCALE DOWN ALL FEATURE MAP TO GERNALIZE MORE, TO REDUCE OVERFITTING
-    no_Of_Nodes = 500  # NO. OF NODES IN HIDDEN LAYERS
-    model = Sequential()
-    model.add((Conv2D(no_Of_Filters, size_of_Filter, input_shape=(imageDimesions[0], imageDimesions[1], 1),
-                      activation='relu')))  # ADDING MORE CONVOLUTION LAYERS = LESS FEATURES BUT CAN CAUSE ACCURACY TO INCREASE
-    model.add((Conv2D(no_Of_Filters, size_of_Filter, activation='relu')))
-    model.add(MaxPooling2D(pool_size=size_of_pool))  # DOES NOT EFFECT THE DEPTH/NO OF FILTERS
-
-    model.add((Conv2D(no_Of_Filters // 2, size_of_Filter2, activation='relu')))
-    model.add((Conv2D(no_Of_Filters // 2, size_of_Filter2, activation='relu')))
-    model.add(MaxPooling2D(pool_size=size_of_pool))
-    model.add(Dropout(0.5))
-
-    model.add(Flatten())
-    model.add(Dense(no_Of_Nodes, activation='relu'))
-    model.add(Dropout(0.5))  # INPUTS NODES TO DROP WITH EACH UPDATE 1 ALL 0 NONE
-    model.add(Dense(noOfClasses, activation='softmax'))  # OUTPUT LAYER
-    # COMPILE MODEL
-    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
-    return model
 
 
 ############################### TRAIN
